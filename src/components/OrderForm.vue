@@ -17,19 +17,25 @@
       <div v-for="product in products" :key="product.id" class="product-item">
         <input
           type="radio"
-          :id="product.id"
+          :id="String(product.id)"
           v-model="selectedProduct"
           :value="product"
         />
-        <label :for="product.id">
-          <strong>{{ product.name }}</strong> -
-          ${{ product.price ? product.price.toFixed(2) : "N/A" }}
+        <label :for="String(product.id)">
+          <strong>{{ product.name }}</strong>
+          - ${{ product.price != null ? Number(product.price).toFixed(2) : 'N/A' }}
         </label>
       </div>
 
       <div v-if="selectedProduct" class="quantity-container">
         <label for="quantity">Quantity:</label>
-        <input type="number" v-model.number="quantity" min="1" placeholder="Enter quantity" />
+        <input
+          id="quantity"
+          type="number"
+          v-model.number="quantity"
+          min="1"
+          placeholder="Enter quantity"
+        />
       </div>
 
       <div v-if="selectedProduct" class="total-price">
@@ -53,38 +59,40 @@
 
 <script>
 export default {
+  name: "OrderForm",
   data() {
     return {
       products: [],
       selectedProduct: null,
       quantity: 1,
-      // Read from Vue env (baked at build time)
-      productServiceUrl: process.env.VUE_APP_PRODUCT_SERVICE_URL,
       orderServiceUrl: process.env.VUE_APP_ORDER_SERVICE_URL,
+      productServiceUrl: process.env.VUE_APP_PRODUCT_SERVICE_URL,
     };
   },
-
   async created() {
     await this.fetchProducts();
   },
-
   computed: {
     totalPrice() {
-      return this.selectedProduct ? this.selectedProduct.price * this.quantity : 0;
-    }
+      if (!this.selectedProduct) return 0;
+      const price = Number(this.selectedProduct.price || 0);
+      return price * Number(this.quantity || 0);
+    },
   },
-
   methods: {
     async fetchProducts() {
       try {
-        if (response.ok) {
-          this.products = await response.json();
-        } else {
-          console.error("Product API status:", response.status);
-          alert("Failed to fetch products.");
+        if (!this.productServiceUrl) {
+          console.error("Missing VUE_APP_PRODUCT_SERVICE_URL in .env");
+          alert("Missing product service URL (.env).");
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching products:", error);
+
+        const res = await fetch(`${this.productServiceUrl}/products`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        this.products = await res.json();
+      } catch (err) {
+        console.error("Error fetching products:", err);
         alert("Failed to fetch products.");
       }
     },
@@ -96,9 +104,15 @@ export default {
       }
 
       try {
-          headers: {
-            "Content-Type": "application/json",
-          },
+        if (!this.orderServiceUrl) {
+          console.error("Missing VUE_APP_ORDER_SERVICE_URL in .env");
+          alert("Missing order service URL (.env).");
+          return;
+        }
+
+        const res = await fetch(`${this.orderServiceUrl}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             product: this.selectedProduct,
             quantity: this.quantity,
@@ -106,17 +120,15 @@ export default {
           }),
         });
 
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         alert(
-          `Order for ${this.quantity} x ${this.selectedProduct.name} placed successfully! Total: $${this.totalPrice.toFixed(
+          `Order placed: ${this.quantity} x ${this.selectedProduct.name} (Total $${this.totalPrice.toFixed(
             2
-          )}`
+          )})`
         );
-      } catch (error) {
-        console.error("Error placing order:", error);
+      } catch (err) {
+        console.error("Error placing order:", err);
         alert("Failed to place order.");
       }
     },
@@ -221,10 +233,15 @@ input[type="number"] {
   cursor: pointer;
   width: 100%;
   font-size: 1.1rem;
+  transition: background-color 0.3s ease;
 }
 
 .order-button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.order-button:hover:enabled {
+  background-color: #2e7d32;
 }
 </style>
