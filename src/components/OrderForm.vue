@@ -55,13 +55,12 @@
 export default {
   data() {
     return {
-      // IMPORTANT: these are injected at build/dev-server start time
-      orderServiceUrl: process.env.VUE_APP_ORDER_SERVICE_URL || "http://localhost:3000",
-      productServiceUrl: process.env.VUE_APP_PRODUCT_SERVICE_URL || "http://localhost:3030",
-
       products: [],
       selectedProduct: null,
       quantity: 1,
+      // Read from Vue env (baked at build time)
+      productServiceUrl: process.env.VUE_APP_PRODUCT_SERVICE_URL,
+      orderServiceUrl: process.env.VUE_APP_ORDER_SERVICE_URL,
     };
   },
 
@@ -72,19 +71,18 @@ export default {
   computed: {
     totalPrice() {
       return this.selectedProduct ? this.selectedProduct.price * this.quantity : 0;
-    },
+    }
   },
 
   methods: {
     async fetchProducts() {
       try {
-        const url = `${this.productServiceUrl}/products`;
-        const response = await fetch(url);
-
+        // IMPORTANT: use env URL, not localhost
+        const response = await fetch(`${this.productServiceUrl}/products`);
         if (response.ok) {
           this.products = await response.json();
         } else {
-          console.error("Products fetch failed:", response.status, response.statusText);
+          console.error("Product API status:", response.status);
           alert("Failed to fetch products.");
         }
       } catch (error) {
@@ -100,10 +98,12 @@ export default {
       }
 
       try {
-        const url = `${this.orderServiceUrl}/orders`;
-        const response = await fetch(url, {
+        // IMPORTANT: use env URL, not localhost
+        const response = await fetch(`${this.orderServiceUrl}/orders`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             product: this.selectedProduct,
             quantity: this.quantity,
@@ -112,16 +112,13 @@ export default {
         });
 
         if (!response.ok) {
-          const text = await response.text().catch(() => "");
-          console.error("Order failed:", response.status, text);
-          alert("Failed to place order.");
-          return;
+          throw new Error(`Server error: ${response.status}`);
         }
 
         alert(
-          `Order placed! ${this.quantity} x ${this.selectedProduct.name} (Total: $${this.totalPrice.toFixed(
+          `Order for ${this.quantity} x ${this.selectedProduct.name} placed successfully! Total: $${this.totalPrice.toFixed(
             2
-          )})`
+          )}`
         );
       } catch (error) {
         console.error("Error placing order:", error);
