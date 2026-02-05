@@ -77,8 +77,6 @@ export default {
   methods: {
     async fetchProducts() {
       try {
-        // IMPORTANT: use env URL, not localhost
-        const response = await fetch(`${this.productServiceUrl}/products`);
         if (response.ok) {
           this.products = await response.json();
         } else {
@@ -98,9 +96,6 @@ export default {
       }
 
       try {
-        // IMPORTANT: use env URL, not localhost
-        const response = await fetch(`${this.orderServiceUrl}/orders`, {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
