@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     env:
-      VUE_APP_PRODUCT_SERVICE_URL: https://<YOUR-PRODUCT-WEBAPP>.azurewebsites.net
-      VUE_APP_ORDER_SERVICE_URL: https://<YOUR-ORDER-WEBAPP>.azurewebsites.net
+      VUE_APP_PRODUCT_SERVICE_URL: https://lab3-product-service-cbcmh5fcbbaqb7ce.eastus2-01.azurewebsites.net
+      VUE_APP_ORDER_SERVICE_URL: https://lab3-order-service-d8czc8g8g4dcaqag.eastus2-01.azurewebsites.net
     steps:
       - uses: actions/checkout@v3
         with:
@@ -47,4 +47,5 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_CLIFF_09B1C3E0F }}
           action: "close"
+
 
